@@ -3,6 +3,8 @@
 # This file is part of AnonXMusic
 
 
+import asyncio
+from contextlib import suppress
 from pathlib import Path
 
 from ntgcalls import (ConnectionNotFound, TelegramServerError,
@@ -53,11 +55,13 @@ class TgCall(PyTgCalls):
     ) -> None:
         client = await db.get_assistant(chat_id)
         _lang = await lang.get_lang(chat_id)
-        _thumb = (
-            await thumb.generate(media)
-            if isinstance(media, Track)
-            else config.DEFAULT_THUMB
-        ) if config.THUMB_GEN else None
+        _thumb = None
+        _thumb_task = None
+        if config.THUMB_GEN and not seek_time:
+            if isinstance(media, Track):
+                _thumb_task = asyncio.create_task(thumb.generate(media))
+            else:
+                _thumb = config.DEFAULT_THUMB
 
         if (
             isinstance(media, Track)
@@ -70,6 +74,10 @@ class TgCall(PyTgCalls):
             media.file_path = await yt.download(media.id, video=media.video)
 
         if not media.file_path:
+            if _thumb_task:
+                _thumb_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await _thumb_task
             await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))
             return await self.play_next(chat_id)
 
@@ -92,6 +100,8 @@ class TgCall(PyTgCalls):
                 config=types.GroupCallConfig(auto_start=False),
             )
             if not seek_time:
+                if _thumb_task:
+                    _thumb = await _thumb_task
                 media.time = 1
                 await db.add_call(chat_id)
                 text = _lang["play_media"].format(
@@ -142,6 +152,11 @@ class TgCall(PyTgCalls):
         except RTMPStreamingUnsupported:
             await self.stop(chat_id)
             await message.edit_text(_lang["error_rtmp"])
+        finally:
+            if _thumb_task and not _thumb_task.done():
+                _thumb_task.cancel()
+                with suppress(asyncio.CancelledError):
+                    await _thumb_task
 
 
     async def replay(self, chat_id: int) -> None:
