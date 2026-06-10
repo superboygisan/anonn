@@ -35,6 +35,7 @@ async def start(_, message: types.Message):
         else message.lang["start_gp"].format(app.name)
     )
 
+    await app.refresh_support_links()
     key = buttons.start_key(message.lang, private)
     await message.reply_photo(
         photo=config.START_IMG,

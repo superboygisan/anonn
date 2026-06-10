@@ -86,6 +86,6 @@
 
 <p align="center">
     💡 Want to help improve AnonXMusic?<br>
-    You can translate the strings in the <code>en.json</code> file into your language and send it to <a href=https://DevilsHeavenMF.t.me>@DevilsHeavenMF</a>,<br>
+    You can translate the strings in the <code>en.json</code> file into your language and send it to <a href=https://t.me/SuMelodyVibes>@SuMelodyVibes</a>,<br>
     or open a pull request to contribute your translation!
 </p>

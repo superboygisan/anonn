@@ -8,6 +8,10 @@ import pyrogram
 from anony import config, logger
 
 
+DEFAULT_SUPPORT_LINK = "https://t.me/SuMelodyVibes"
+TELEGRAM_LINK_PREFIXES = ("https://t.me/", "http://t.me/", "t.me/", "telegram.me/")
+
+
 class Bot(pyrogram.Client):
     def __init__(self):
         super().__init__(
@@ -23,6 +27,57 @@ class Bot(pyrogram.Client):
         self.logger = config.LOGGER_ID
         self.bl_users = pyrogram.filters.user()
         self.sudoers = pyrogram.filters.user(self.owner)
+
+    @staticmethod
+    def _support_chat_id(value: str) -> int | None:
+        value = str(value or "").strip()
+        if value.lstrip("-").isdigit():
+            return int(value)
+        return None
+
+    @staticmethod
+    def _support_url(value: str) -> str | None:
+        value = str(value or "").strip()
+        if not value:
+            return None
+        if value.startswith(("https://", "http://")):
+            return value
+        for prefix in TELEGRAM_LINK_PREFIXES:
+            if value.startswith(prefix):
+                return f"https://t.me/{value.removeprefix(prefix)}"
+        if value.lstrip("-").isdigit():
+            return None
+        return f"https://t.me/{value.removeprefix('@')}"
+
+    async def _resolve_support_link(self, attr: str) -> str:
+        value = getattr(config, f"{attr}_RAW", getattr(config, attr, ""))
+        if url := self._support_url(value):
+            return url
+
+        chat_id = self._support_chat_id(value)
+        if chat_id is None:
+            return DEFAULT_SUPPORT_LINK
+
+        try:
+            chat = await self.get_chat(chat_id)
+            if chat.invite_link:
+                return chat.invite_link
+            return await self.export_chat_invite_link(chat_id)
+        except Exception as ex:
+            logger.warning(
+                "Failed to generate %s invite link for %s: %s",
+                attr,
+                chat_id,
+                ex,
+            )
+            return DEFAULT_SUPPORT_LINK
+
+    async def resolve_support_links(self) -> None:
+        config.SUPPORT_CHANNEL = await self._resolve_support_link("SUPPORT_CHANNEL")
+        config.SUPPORT_CHAT = await self._resolve_support_link("SUPPORT_CHAT")
+
+    async def refresh_support_links(self) -> None:
+        await self.resolve_support_links()
 
     async def boot(self):
         """
@@ -45,6 +100,8 @@ class Bot(pyrogram.Client):
 
         if get.status != pyrogram.enums.ChatMemberStatus.ADMINISTRATOR:
             raise SystemExit("Please promote the bot as an admin in logger group.")
+
+        await self.resolve_support_links()
         logger.info(f"Bot started as @{self.username}")
 
     async def exit(self):

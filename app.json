@@ -40,6 +40,16 @@
             "value": "",
             "required": true
         },
+        "SUPPORT_CHANNEL": {
+            "description": "Telegram updates channel URL, username, or numeric chat ID. For private IDs, the bot must be admin with invite link permission.",
+            "value": "https://t.me/SuMelodyVibes",
+            "required": false
+        },
+        "SUPPORT_CHAT": {
+            "description": "Telegram support group URL, username, or numeric chat ID. For private IDs, the bot must be admin with invite link permission.",
+            "value": "https://t.me/SuMelodyVibes",
+            "required": false
+        },
         "API_URL": {
             "description": "Optional YouTube download API base URL used as a fallback when yt-dlp fails.",
             "value": "",
