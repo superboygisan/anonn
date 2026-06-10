@@ -13,7 +13,7 @@ from pathlib import Path
 
 from py_yt import Playlist, VideosSearch
 
-from anony import logger
+from anony import config, logger
 from anony.helpers import Track, utils
 
 
@@ -34,6 +34,80 @@ class YouTube:
             r"(?!/(watch\?v=[A-Za-z0-9_-]{11}|shorts/[A-Za-z0-9_-]{11}"
             r"|playlist\?list=PL[A-Za-z0-9_-]+|[A-Za-z0-9_-]{11}))\S*"
         )
+        self.api_warned = False
+
+    def _usable_file(self, filename: str | Path) -> bool:
+        path = Path(filename)
+        return path.exists() and path.is_file() and path.stat().st_size > 0
+
+    def _cached_download(self, video_id: str, video: bool) -> str | None:
+        exts = ["mp4"] if video else ["webm", "mp3", "m4a"]
+        for ext in exts:
+            filename = Path("downloads") / f"{video_id}.{ext}"
+            if self._usable_file(filename):
+                return str(filename)
+        return None
+
+    def _api_filename(self, video_id: str, video: bool) -> Path:
+        ext = "mp4" if video else "mp3"
+        return Path("downloads") / f"{video_id}.{ext}"
+
+    async def _download_api(self, video_id: str, video: bool = False) -> str | None:
+        if not config.API_URL or not config.API_KEY:
+            if not self.api_warned:
+                self.api_warned = True
+                logger.warning("API fallback is disabled; set API_URL and API_KEY.")
+            return None
+
+        filename = self._api_filename(video_id, video)
+        if self._usable_file(filename):
+            return str(filename)
+
+        Path("downloads").mkdir(parents=True, exist_ok=True)
+        tmpfile = filename.with_suffix(filename.suffix + ".part")
+        timeout = aiohttp.ClientTimeout(total=600 if video else 300)
+        params = {
+            "url": video_id,
+            "type": "video" if video else "audio",
+            "api_key": config.API_KEY,
+        }
+
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(f"{config.API_URL}/download", params=params) as resp:
+                    if resp.status != 200:
+                        logger.warning(
+                            "API fallback failed for %s: HTTP %s",
+                            video_id,
+                            resp.status,
+                        )
+                        return None
+
+                    content_type = resp.headers.get("Content-Type", "").lower()
+                    if "application/json" in content_type or content_type.startswith("text/"):
+                        message = (await resp.text())[:200]
+                        logger.warning("API fallback failed for %s: %s", video_id, message)
+                        return None
+
+                    with open(tmpfile, "wb") as fw:
+                        async for chunk in resp.content.iter_chunked(131072):
+                            if chunk:
+                                fw.write(chunk)
+
+            if not self._usable_file(tmpfile):
+                return None
+
+            tmpfile.replace(filename)
+            return str(filename)
+        except Exception as ex:
+            logger.warning("API fallback error for %s: %s", video_id, ex)
+            return None
+        finally:
+            if tmpfile.exists() and not self._usable_file(filename):
+                try:
+                    tmpfile.unlink()
+                except Exception:
+                    pass
 
     def get_cookies(self):
         if not self.checked:
@@ -115,8 +189,9 @@ class YouTube:
         ext = "mp4" if video else "webm"
         filename = f"downloads/{video_id}.{ext}"
 
-        if Path(filename).exists():
-            return filename
+        cached = self._cached_download(video_id, video)
+        if cached:
+            return cached
 
         cookie = self.get_cookies()
         base_opts = {
@@ -151,6 +226,9 @@ class YouTube:
                 except Exception as ex:
                     logger.warning("Download failed: %s", ex)
                     return None
-            return filename
+            return filename if self._usable_file(filename) else None
 
-        return await asyncio.to_thread(_download)
+        downloaded = await asyncio.to_thread(_download)
+        if downloaded:
+            return downloaded
+        return await self._download_api(video_id, video=video)

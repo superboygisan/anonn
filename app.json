@@ -39,6 +39,16 @@
             "description": "A Pyrogram v2 String Session from @StringFatherBot on Telegram.",
             "value": "",
             "required": true
+        },
+        "API_URL": {
+            "description": "Optional YouTube download API base URL used as a fallback when yt-dlp fails.",
+            "value": "",
+            "required": false
+        },
+        "API_KEY": {
+            "description": "Optional API key for the YouTube download API fallback.",
+            "value": "",
+            "required": false
         }
     }
 }

@@ -22,5 +22,9 @@ services:
         sync: false
       - key: SESSION
         sync: false
+      - key: API_URL
+        value: ""
+      - key: API_KEY
+        sync: false
       - key: COOKIES_URL
         value: ""
