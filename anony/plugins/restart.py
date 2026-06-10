@@ -6,7 +6,6 @@
 import os
 import sys
 import shutil
-import asyncio
 
 from pyrogram import filters, types
 
@@ -52,8 +51,7 @@ async def _restart(_, m: types.Message):
         shutil.rmtree(directory, ignore_errors=True)
 
     await sent.edit_text(m.lang["restarted"])
-    task = asyncio.create_task(stop())
-    await task
+    await stop()
 
     try: os.remove("log.txt")
     except Exception: pass

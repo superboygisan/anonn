@@ -6,7 +6,6 @@
 import time
 import asyncio
 import logging
-from contextlib import suppress
 from logging.handlers import RotatingFileHandler
 
 logging.basicConfig(
@@ -33,6 +32,8 @@ from config import Config
 config = Config()
 config.check()
 tasks = []
+_stop_lock: asyncio.Lock | None = None
+_stopped = False
 boot = time.time()
 
 from anony.core.bot import Bot
@@ -63,19 +64,80 @@ from anony.core.calls import TgCall
 anon = TgCall()
 
 
-async def stop(ignore_cleanup_errors: bool = False) -> None:
-    logger.info("Stopping...")
-    for task in tasks:
+def _get_stop_lock() -> asyncio.Lock:
+    global _stop_lock
+
+    if _stop_lock is None:
+        _stop_lock = asyncio.Lock()
+    return _stop_lock
+
+
+async def _cancel_tasks() -> None:
+    current_task = asyncio.current_task()
+    pending = [
+        task
+        for task in dict.fromkeys(tasks)
+        if task is not current_task and not task.done()
+    ]
+    tasks.clear()
+
+    if not pending:
+        return
+
+    logger.info("Cancelling %s background task(s)...", len(pending))
+    for task in pending:
         task.cancel()
-        with suppress(asyncio.exceptions.CancelledError):
-            await task
 
-    for closer in (app.exit, userbot.exit, db.close, thumb.close):
+    results = await asyncio.gather(*pending, return_exceptions=True)
+    for result in results:
+        if isinstance(result, BaseException) and not isinstance(
+            result, asyncio.CancelledError
+        ):
+            logger.warning("Background task failed during shutdown: %r", result)
+
+
+async def _run_cleanup(
+    name: str,
+    closer,
+    *,
+    ignore_cleanup_errors: bool,
+    timeout: float = 30,
+) -> None:
+    try:
+        await asyncio.wait_for(closer(), timeout=timeout)
+    except asyncio.CancelledError:
+        raise
+    except Exception as ex:
         if ignore_cleanup_errors:
-            # Partial startup cleanup should not hide the original boot failure.
-            with suppress(Exception):
-                await closer()
+            logger.debug("Ignored %s cleanup error: %r", name, ex)
         else:
-            await closer()
+            logger.exception("Error while stopping %s.", name)
 
-    logger.info("Stopped.\n")
+
+async def stop(ignore_cleanup_errors: bool = False) -> None:
+    global _stopped
+
+    async with _get_stop_lock():
+        if _stopped:
+            return
+
+        logger.info("Stopping...")
+        await _cancel_tasks()
+
+        cleaners = (
+            ("telegram downloads", tg.close),
+            ("voice calls", anon.exit),
+            ("bot", app.exit),
+            ("assistants", userbot.exit),
+            ("database", db.close),
+            ("thumbnails", thumb.close),
+        )
+        for name, closer in cleaners:
+            await _run_cleanup(
+                name,
+                closer,
+                ignore_cleanup_errors=ignore_cleanup_errors,
+            )
+
+        _stopped = True
+        logger.info("Stopped.\n")

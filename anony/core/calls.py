@@ -232,3 +232,32 @@ class TgCall(PyTgCalls):
             self.clients.append(client)
             await self.decorators(client)
         logger.info("PyTgCalls client(s) started.")
+
+
+    async def exit(self) -> None:
+        """
+        Leave active group calls and release local PyTgCalls resources.
+        """
+        clients = list(self.clients)
+        if not clients:
+            return
+
+        for chat_id in list(db.active_calls):
+            with suppress(Exception):
+                await self.stop(chat_id)
+
+        for client in clients:
+            with suppress(Exception):
+                for chat_id in list((await client.calls).keys()):
+                    with suppress(Exception):
+                        await client.leave_call(chat_id, close=False)
+
+            executor = getattr(client, "executor", None)
+            if executor:
+                with suppress(Exception):
+                    executor.shutdown(wait=False, cancel_futures=True)
+            if hasattr(client, "_is_running"):
+                client._is_running = False
+
+        self.clients.clear()
+        logger.info("PyTgCalls client(s) stopped.")

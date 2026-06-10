@@ -6,6 +6,7 @@
 import asyncio
 import os
 import time
+from contextlib import suppress
 
 from pyrogram import types
 
@@ -38,6 +39,23 @@ class Telegram:
             )
         else:
             await query.answer(query.lang["dl_not_found"], show_alert=True)
+
+    async def close(self) -> None:
+        for event in self.events.values():
+            event.set()
+
+        tasks = list(self.active_tasks.values())
+        for task in tasks:
+            if not task.done():
+                task.cancel()
+        for task in tasks:
+            with suppress(asyncio.CancelledError):
+                await task
+
+        self.active.clear()
+        self.events.clear()
+        self.last_edit.clear()
+        self.active_tasks.clear()
 
     async def download(self, msg: types.Message, sent: types.Message) -> Media | None:
         msg_id = sent.id

@@ -48,6 +48,8 @@ class Userbot(Client):
         }
         client = clients[num]
         await client.start()
+        if client not in self.clients:
+            self.clients.append(client)
         try:
             await client.send_message(config.LOGGER_ID, "Assistant Started")
         except Exception:
@@ -57,7 +59,6 @@ class Userbot(Client):
         client.name = ub.me.first_name
         client.username = ub.me.username
         client.mention = ub.me.mention
-        self.clients.append(client)
         try:
             await ub.join_chat(config.SUPPORT_CHANNEL)
         except Exception:
@@ -79,10 +80,17 @@ class Userbot(Client):
         """
         Asynchronously stops the assistants.
         """
+        configured = []
         if config.SESSION1:
-            await self.one.stop()
+            configured.append(self.one)
         if config.SESSION2:
-            await self.two.stop()
+            configured.append(self.two)
         if config.SESSION3:
-            await self.three.stop()
+            configured.append(self.three)
+
+        clients = list(dict.fromkeys([*self.clients, *configured]))
+        for client in reversed(clients):
+            if getattr(client, "is_connected", False):
+                await client.stop()
+        self.clients.clear()
         logger.info("Assistants stopped.")

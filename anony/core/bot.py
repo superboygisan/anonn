@@ -108,5 +108,6 @@ class Bot(pyrogram.Client):
         """
         Asynchronously stops the bot.
         """
-        await super().stop()
-        logger.info("Bot stopped.")
+        if getattr(self, "is_connected", False):
+            await super().stop()
+            logger.info("Bot stopped.")
