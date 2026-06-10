@@ -3,6 +3,8 @@
 # This file is part of AnonXMusic
 
 
+from pathlib import Path
+
 from ntgcalls import (ConnectionNotFound, TelegramServerError,
                       RTMPStreamingUnsupported, ConnectionError)
 from pyrogram.errors import (ChatSendMediaForbidden, ChatSendPhotosForbidden,
@@ -56,6 +58,16 @@ class TgCall(PyTgCalls):
             if isinstance(media, Track)
             else config.DEFAULT_THUMB
         ) if config.THUMB_GEN else None
+
+        if (
+            isinstance(media, Track)
+            and (
+                not media.file_path
+                or not Path(media.file_path).is_file()
+                or Path(media.file_path).stat().st_size == 0
+            )
+        ):
+            media.file_path = await yt.download(media.id, video=media.video)
 
         if not media.file_path:
             await message.edit_text(_lang["error_no_file"].format(config.SUPPORT_CHAT))

@@ -3,8 +3,6 @@
 # This file is part of AnonXMusic
 
 
-from pathlib import Path
-
 from pyrogram import filters, types
 
 from anony import anon, app, config, db, lang, queue, tg, yt
@@ -116,10 +114,8 @@ async def play_hndlr(
             return
 
     if not file.file_path:
-        fname = f"downloads/{file.id}.{'mp4' if video else 'webm'}"
-        if Path(fname).exists():
-            file.file_path = fname
-        else:
+        file.file_path = yt.cached_download(file.id, video=video)
+        if not file.file_path:
             await sent.edit_text(m.lang["play_downloading"])
             file.file_path = await yt.download(file.id, video=video)
 

@@ -40,6 +40,9 @@ class YouTube:
         path = Path(filename)
         return path.exists() and path.is_file() and path.stat().st_size > 0
 
+    def _api_enabled(self) -> bool:
+        return bool(config.API_URL and config.API_KEY)
+
     def _cached_download(self, video_id: str, video: bool) -> str | None:
         exts = ["mp4"] if video else ["webm", "mp3", "m4a"]
         for ext in exts:
@@ -48,12 +51,15 @@ class YouTube:
                 return str(filename)
         return None
 
+    def cached_download(self, video_id: str, video: bool = False) -> str | None:
+        return self._cached_download(video_id, video)
+
     def _api_filename(self, video_id: str, video: bool) -> Path:
         ext = "mp4" if video else "mp3"
         return Path("downloads") / f"{video_id}.{ext}"
 
     async def _download_api(self, video_id: str, video: bool = False) -> str | None:
-        if not config.API_URL or not config.API_KEY:
+        if not self._api_enabled():
             if not self.api_warned:
                 self.api_warned = True
                 logger.warning("API fallback is disabled; set API_URL and API_KEY.")
@@ -116,7 +122,7 @@ class YouTube:
                     self.cookies.append(f"{self.cookie_dir}/{file}")
             self.checked = True
         if not self.cookies:
-            if not self.warned:
+            if not self.warned and not self._api_enabled():
                 self.warned = True
                 logger.warning("Cookies are missing; downloads might fail.")
             return None
@@ -194,6 +200,13 @@ class YouTube:
             return cached
 
         cookie = self.get_cookies()
+        api_tried = False
+        if not cookie and self._api_enabled():
+            api_tried = True
+            downloaded = await self._download_api(video_id, video=video)
+            if downloaded:
+                return downloaded
+
         base_opts = {
             "outtmpl": "downloads/%(id)s.%(ext)s",
             "quiet": True,
@@ -231,4 +244,6 @@ class YouTube:
         downloaded = await asyncio.to_thread(_download)
         if downloaded:
             return downloaded
+        if api_tried:
+            return None
         return await self._download_api(video_id, video=video)
