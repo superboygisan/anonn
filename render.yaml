@@ -4,6 +4,7 @@ services:
   - type: worker
     name: anonxmusic
     runtime: docker
+    region: singapore
     dockerfilePath: ./Dockerfile
     dockerContext: .
     autoDeployTrigger: 'off'
