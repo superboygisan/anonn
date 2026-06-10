@@ -22,7 +22,7 @@ Supports YouTube, Spotify, Resso, Apple Music, SoundCloud and M3U8 links.
 <img src="https://github.com/AnonymousX1025/AnonXMusic/blob/master/.github/anonx.jpg" width="720" height="auto">
 
 AnonXMusic lets you stream high-quality and low-latency audio and video playback into telegram group video chats.<br>
-Built with Python, Pyrogram, and Py-TgCalls, it’s optimized for reliability and easy deployment on Heroku, VPS, or Docker.
+Built with Python, Pyrogram, and Py-TgCalls, it’s optimized for reliability and easy deployment on Heroku, Render, VPS, or Docker.
 </div>
 
 <hr>
@@ -32,7 +32,7 @@ Built with Python, Pyrogram, and Py-TgCalls, it’s optimized for reliability an
 - 🎧 Stream low-latency audio in real time to <b>Telegram group video chats</b>
 - 🌐 Supports multiple platforms like <b>YouTube, Spotify, Apple Music, SoundCloud</b>
 - ⚡ Advanced queue management with auto-play
-- ⚙️ Easy deployment — works on Local, VPS, or Heroku
+- ⚙️ Easy deployment — works on Local, VPS, Heroku, or Render
 - ❤️ Built with Python
 <hr>
 
@@ -91,6 +91,42 @@ uv run python3 -m anony
 > ⭐ or use Git Bash or WSL to run `bash start`.
 ```
 
+</details>
+
+<details>
+    <summary>
+        <h3>Deploy to Render</h3>
+    </summary>
+
+This repository includes a <code>render.yaml</code> Blueprint for Render. It deploys AnonXMusic as a Docker background worker because the bot runs continuously and does not expose an HTTP server.
+
+1. Fork this repository.
+2. Open the <a href="https://dashboard.render.com/blueprints/new">Render Blueprint dashboard</a>.
+3. Connect your fork and select the branch that contains <code>render.yaml</code>.
+4. Fill in the required environment variables:
+
+```env
+API_ID=
+API_HASH=
+BOT_TOKEN=
+MONGO_URL=
+LOGGER_ID=
+OWNER_ID=
+SESSION=
+```
+
+Optional:
+
+```env
+COOKIES_URL=
+```
+
+Use <code>COOKIES_URL</code> only if your deployment needs cookies for YouTube playback. It accepts one or more <code>batbin.me</code> URLs separated by spaces.
+
+5. Deploy the Blueprint.
+
+> Auto deploy is disabled in <code>render.yaml</code>. Trigger deploys manually from Render after pushing updates.
+> Render background workers require a paid worker instance. Use the Dockerfile included in this repo; no separate build or start command is needed.
 </details>
 
 <details>

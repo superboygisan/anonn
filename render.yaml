@@ -1,0 +1,26 @@
+# Render Blueprint for AnonXMusic.
+# Secret values are entered in the Render Dashboard when the Blueprint is deployed.
+services:
+  - type: worker
+    name: anonxmusic
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    autoDeployTrigger: 'off'
+    envVars:
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: BOT_TOKEN
+        sync: false
+      - key: MONGO_URL
+        sync: false
+      - key: LOGGER_ID
+        sync: false
+      - key: OWNER_ID
+        sync: false
+      - key: SESSION
+        sync: false
+      - key: COOKIES_URL
+        value: ""
