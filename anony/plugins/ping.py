@@ -6,32 +6,34 @@
 import asyncio
 import time
 import psutil
+import speedtest
 
 from pyrogram import filters, types
 from anony import app, anon, boot, config, db, lang
 from anony.helpers import buttons
 
 
-def _format_rate(bytes_per_second: float) -> str:
-    units = ("B/s", "KB/s", "MB/s", "GB/s")
-    speed = float(bytes_per_second)
-    for unit in units:
-        if speed < 1024 or unit == units[-1]:
-            return f"{speed:.0f} {unit}" if unit == "B/s" else f"{speed:.2f} {unit}"
-        speed /= 1024
+def _format_mbps(bits_per_second: float) -> str:
+    return f"{bits_per_second / 1_000_000:.2f} Mbps"
 
 
-async def _network_speed(interval: float = 1.0) -> str:
+def _run_speedtest() -> str:
+    test = speedtest.Speedtest(secure=True)
+    test.get_best_server()
+    download = test.download()
+    upload = test.upload(pre_allocate=False)
+    return (
+        f"DL: {_format_mbps(download)} | "
+        f"UL: {_format_mbps(upload)} | "
+        f"Ping: {test.results.ping:.2f}ms"
+    )
+
+
+async def _network_speed() -> str:
     try:
-        before = psutil.net_io_counters()
-        await asyncio.sleep(interval)
-        after = psutil.net_io_counters()
+        return await asyncio.to_thread(_run_speedtest)
     except Exception:
         return "N/A"
-
-    download = max(0, after.bytes_recv - before.bytes_recv) / interval
-    upload = max(0, after.bytes_sent - before.bytes_sent) / interval
-    return f"DL: {_format_rate(download)} | UL: {_format_rate(upload)}"
 
 
 async def _db_latency() -> str:
@@ -69,7 +71,7 @@ async def _ping(_, m: types.Message):
         calls_latency,
     )
     caption += (
-        f"\n<b>Network:</b> <code>{network_speed}</code>"
+        f"\n<b>Speedtest:</b> <code>{network_speed}</code>"
         f"\n<b>DB Latency:</b> <code>{db_latency}</code>"
     )
     await sent.edit_media(
