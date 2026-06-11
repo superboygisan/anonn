@@ -76,6 +76,16 @@ class Userbot(Client):
         if config.SESSION3:
             await self.boot_client(3, self.three)
 
+    async def join_support_channel(self):
+        """
+        Retry joining the support channel after the bot resolves support links.
+        """
+        for client in self.clients:
+            try:
+                await client.join_chat(config.SUPPORT_CHANNEL)
+            except Exception:
+                pass
+
     async def exit(self):
         """
         Asynchronously stops the assistants.
