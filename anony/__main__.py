@@ -10,7 +10,7 @@ import sys
 from contextlib import suppress
 
 from anony import (anon, app, config, db, logger,
-                   stop, thumb, userbot, yt)
+                   stop, thumb, userbot, youtube as yt)
 from anony.plugins import all_modules
 
 
@@ -151,3 +151,5 @@ if __name__ == "__main__":
         run_main()
     except KeyboardInterrupt:
         pass
+
+youtube as yt
