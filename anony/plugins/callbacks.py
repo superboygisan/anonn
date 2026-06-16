@@ -7,7 +7,8 @@ import re
 
 from pyrogram import errors, filters, types
 
-from anony import anon, app, db, lang, queue, tg, yt
+from anony import anon, app, db, lang, queue, tg, youtube as yt
+
 from anony.helpers import admin_check, buttons, can_manage_vc
 
 
