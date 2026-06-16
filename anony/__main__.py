@@ -21,7 +21,7 @@ from anony import (
 )
 
 # FIXED YOUTUBE IMPORT
-from anony.core import youtube as yt
+from anony import youtube as yt
 
 from anony.plugins import all_modules
 
