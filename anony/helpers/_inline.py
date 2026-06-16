@@ -4,7 +4,7 @@
 
 import math
 from pyrogram import enums, types
-from AnonXMusic.utils.formatters import time_to_seconds
+from anony.utils.formatters import time_to_seconds
 
 class Inline:
     def __init__(self):
