@@ -4,7 +4,7 @@
 
 from pyrogram import filters, types
 
-from anony import anon, app, config, db, lang, queue, tg, yt
+from anony import anon, app, config, db, lang, queue, tg, youtube as yt
 from anony.helpers import buttons, utils
 from anony.helpers._play import checkUB
 
