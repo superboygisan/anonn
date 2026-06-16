@@ -1,13 +1,10 @@
-# Copyright (c) 2025 AnonymousX1025
+# Copyright (c) 2026 AnonymousX1025
 # Licensed under the MIT License.
 # This file is part of AnonXMusic
 
-
+import math
 from pyrogram import enums, types
-
-from anony import app, config, lang
-from anony.core.lang import format_lang_name
-
+from AnonXMusic.utils.formatters import time_to_seconds
 
 class Inline:
     def __init__(self):
@@ -36,254 +33,97 @@ class Inline:
             **kwargs,
         )
 
-    def cancel_dl(self, text) -> types.InlineKeyboardMarkup:
-        return self.ikm(
-            [[self._button(text=text, category="danger", callback_data="cancel_dl")]]
-        )
+    # --- AAPKE PURANE FUNCTIONS KAA NAYA CONVERTED STYLE ---
 
-    def controls(
-        self,
-        chat_id: int,
-        status: str = None,
-        timer: str = None,
-        remove: bool = False,
-    ) -> types.InlineKeyboardMarkup:
-        keyboard = []
-        if status:
-            keyboard.append(
-                [
-                    self._button(
-                        text=status,
-                        category="status",
-                        callback_data=f"controls status {chat_id}",
-                    )
-                ]
-            )
-        elif timer:
-            keyboard.append(
-                [
-                    self._button(
-                        text=timer,
-                        category="status",
-                        callback_data=f"controls status {chat_id}",
-                    )
-                ]
-            )
-
-        if not remove:
-            keyboard.append(
-                [
-                    self._button(
-                        text="▷",
-                        category="play",
-                        callback_data=f"controls resume {chat_id}",
-                    ),
-                    self._button(
-                        text="II",
-                        category="media",
-                        callback_data=f"controls pause {chat_id}",
-                    ),
-                    self._button(
-                        text="⥁",
-                        category="media",
-                        callback_data=f"controls replay {chat_id}",
-                    ),
-                    self._button(
-                        text="‣‣I",
-                        category="media",
-                        callback_data=f"controls skip {chat_id}",
-                    ),
-                    self._button(
-                        text="▢",
-                        category="danger",
-                        callback_data=f"controls stop {chat_id}",
-                    ),
-                ]
-            )
-        return self.ikm(keyboard)
-
-    def help_markup(
-        self, _lang: dict, back: bool = False
-    ) -> types.InlineKeyboardMarkup:
-        if back:
-            rows = [
-                [
-                    self._button(
-                        text=_lang["back"],
-                        category="nav",
-                        callback_data="help back",
-                    ),
-                    self._button(
-                        text=_lang["close"],
-                        category="danger",
-                        callback_data="help close",
-                    ),
-                ]
-            ]
-        else:
-            cbs = [
-                "admins",
-                "auth",
-                "blist",
-                "lang",
-                "ping",
-                "play",
-                "queue",
-                "stats",
-                "sudo",
-            ]
-            buttons = [
-                self._button(
-                    text=_lang[f"help_{i}"],
-                    category="menu",
-                    callback_data=f"help {cb}",
-                )
-                for i, cb in enumerate(cbs)
-            ]
-            rows = [buttons[i : i + 3] for i in range(0, len(buttons), 3)]
-
-        return self.ikm(rows)
-
-    def lang_markup(
-        self, _lang: str, action: str = "lang_change"
-    ) -> types.InlineKeyboardMarkup:
-        langs = lang.get_languages()
-
-        buttons = [
-            self._button(
-                text=f"{'✅ ' if code == _lang else ''}{format_lang_name(code)} ({code})",
-                category="enabled" if code == _lang else "default",
-                callback_data=f"{action} {code}",
-            )
-            for code in langs
-        ]
-        rows = [buttons[i : i + 2] for i in range(0, len(buttons), 2)]
-        return self.ikm(rows)
-
-    def ping_markup(self, text: str) -> types.InlineKeyboardMarkup:
-        return self.ikm(
-            [[self._button(text=text, category="link", url=config.SUPPORT_CHAT)]]
-        )
-
-    def play_queued(
-        self, chat_id: int, item_id: str, _text: str
-    ) -> types.InlineKeyboardMarkup:
+    def track_markup(self, _, videoid, user_id, channel, fplay) -> types.InlineKeyboardMarkup:
         return self.ikm(
             [
                 [
-                    self._button(
-                        text=_text,
-                        category="play",
-                        callback_data=f"controls force {chat_id} {item_id}",
-                    )
-                ]
-            ]
-        )
-
-    def queue_markup(
-        self, chat_id: int, _text: str, playing: bool
-    ) -> types.InlineKeyboardMarkup:
-        _action = "pause" if playing else "resume"
-        _category = "enabled" if playing else "disabled"
-        return self.ikm(
-            [
-                [
-                    self._button(
-                        text=_text,
-                        category=_category,
-                        callback_data=f"controls {_action} {chat_id} q",
-                    )
-                ]
-            ]
-        )
-
-    def settings_markup(
-        self, lang: dict, admin_only: bool, cmd_delete: bool, language: str, chat_id: int
-    ) -> types.InlineKeyboardMarkup:
-        return self.ikm(
-            [
-                [
-                    self._button(
-                        text=lang["play_mode"] + " ➜",
-                        category="setting",
-                        callback_data="settings",
-                    ),
-                    self._button(
-                        text=admin_only,
-                        category="enabled" if admin_only else "disabled",
-                        callback_data="settings play",
-                    ),
+                    self._button(text=_["P_B_1"], category="success", callback_data=f"MusicStream {videoid}|{user_id}|a|{channel}|{fplay}"),
+                    self._button(text=_["P_B_2"], category="primary", callback_data=f"MusicStream {videoid}|{user_id}|v|{channel}|{fplay}")
                 ],
                 [
-                    self._button(
-                        text=lang["cmd_delete"] + " ➜",
-                        category="setting",
-                        callback_data="settings",
-                    ),
-                    self._button(
-                        text=cmd_delete,
-                        category="enabled" if cmd_delete else "disabled",
-                        callback_data="settings delete",
-                    ),
-                ],
-                [
-                    self._button(
-                        text=lang["language"] + " ➜",
-                        category="setting",
-                        callback_data="settings",
-                    ),
-                    self._button(
-                        text=format_lang_name(language),
-                        category="menu",
-                        callback_data="language",
-                    ),
-                ],
+                    self._button(text=_["CLOSE_BUTTON"], category="danger", callback_data=f"forceclose {videoid}|{user_id}")
+                ]
             ]
         )
 
-    def start_key(
-        self, lang: dict, private: bool = False
-    ) -> types.InlineKeyboardMarkup:
-        rows = [
-            [
-                self._button(
-                    text=lang["add_me"],
-                    category="play",
-                    url=f"https://t.me/{app.username}?startgroup=true",
-                )
-            ],
-            [
-                self._button(
-                    text=lang["help"], category="menu", callback_data="help"
-                )
-            ],
-            [
-                self._button(
-                    text=lang["support"], category="link", url=config.SUPPORT_CHAT
-                ),
-                self._button(
-                    text=lang["channel"], category="link", url=config.SUPPORT_CHANNEL
-                ),
-            ],
-        ]
-        if not private:
-            rows += [
-                [
-                    self._button(
-                        text=lang["language"],
-                        category="menu",
-                        callback_data="language",
-                    )
-                ]
-            ]
-        return self.ikm(rows)
+    def stream_markup_timer(self, _, chat_id, played, dur) -> types.InlineKeyboardMarkup:
+        played_sec = time_to_seconds(played)
+        duration_sec = time_to_seconds(dur)
+        percentage = (played_sec / duration_sec) * 100 if duration_sec > 0 else 0
+        umm = min(math.floor(percentage / 10), 9)
 
-    def yt_key(self, link: str) -> types.InlineKeyboardMarkup:
+        # Dynamic progress bar logic (optimized)
+        bar_list = ["—"] * 10
+        bar_list[umm] = "◉"
+        bar = "".join(bar_list)
+
         return self.ikm(
             [
                 [
-                    self._button(text="❐", category="default", copy_text=link),
-                    self._button(text="Youtube", category="link", url=link),
+                    self._button(text=f"{played} {bar} {dur}", category="status", callback_data="GetTimer")
                 ],
+                [   
+                    self._button(text="▷", category="success", callback_data=f"ADMIN Resume|{chat_id}"),
+                    self._button(text="II", category="primary", callback_data=f"ADMIN Pause|{chat_id}"),
+                    self._button(text="↻", category="default", callback_data=f"ADMIN Replay|{chat_id}"),
+                    self._button(text="‣‣I", category="primary", callback_data=f"ADMIN Skip|{chat_id}"),
+                    self._button(text="▢", category="danger", callback_data=f"ADMIN Stop|{chat_id}")
+                ]
+            ]
+        )
+
+    def stream_markup(self, _, chat_id) -> types.InlineKeyboardMarkup:
+        return self.ikm(
+            [
+                [
+                    self._button(text="▷", category="success", callback_data=f"ADMIN Resume|{chat_id}"),
+                    self._button(text="II", category="primary", callback_data=f"ADMIN Pause|{chat_id}"),
+                    self._button(text="↻", category="default", callback_data=f"ADMIN Replay|{chat_id}"),
+                    self._button(text="‣‣I", category="primary", callback_data=f"ADMIN Skip|{chat_id}"),
+                    self._button(text="▢", category="danger", callback_data=f"ADMIN Stop|{chat_id}")
+                ]
+            ]
+        )
+
+    def playlist_markup(self, _, videoid, user_id, ptype, channel, fplay) -> types.InlineKeyboardMarkup:
+        return self.ikm(
+            [
+                [
+                    self._button(text=_["P_B_1"], category="success", callback_data=f"AnonyPlaylists {videoid}|{user_id}|{ptype}|a|{channel}|{fplay}"),
+                    self._button(text=_["P_B_2"], category="primary", callback_data=f"AnonyPlaylists {videoid}|{user_id}|{ptype}|v|{channel}|{fplay}")
+                ],
+                [
+                    self._button(text=_["CLOSE_BUTTON"], category="danger", callback_data=f"forceclose {videoid}|{user_id}")
+                ]
+            ]
+        )
+
+    def livestream_markup(self, _, videoid, user_id, mode, channel, fplay) -> types.InlineKeyboardMarkup:
+        return self.ikm(
+            [
+                [
+                    self._button(text=_["P_B_3"], category="success", callback_data=f"LiveStream {videoid}|{user_id}|{mode}|{channel}|{fplay}")
+                ],
+                [
+                    self._button(text=_["CLOSE_BUTTON"], category="danger", callback_data=f"forceclose {videoid}|{user_id}")
+                ]
+            ]
+        )
+
+    def slider_markup(self, _, videoid, user_id, query, query_type, channel, fplay) -> types.InlineKeyboardMarkup:
+        query = f"{query[:20]}"
+        return self.ikm(
+            [
+                [
+                    self._button(text=_["P_B_1"], category="success", callback_data=f"MusicStream {videoid}|{user_id}|a|{channel}|{fplay}"),
+                    self._button(text=_["P_B_2"], category="primary", callback_data=f"MusicStream {videoid}|{user_id}|v|{channel}|{fplay}")
+                ],
+                [
+                    self._button(text="◁", category="default", callback_data=f"slider B|{query_type}|{query}|{user_id}|{channel}|{fplay}"),
+                    self._button(text=_["CLOSE_BUTTON"], category="danger", callback_data=f"forceclose {query}|{user_id}"),
+                    self._button(text="▷", category="default", callback_data=f"slider F|{query_type}|{query}|{user_id}|{channel}|{fplay}")
+                ]
             ]
         )
