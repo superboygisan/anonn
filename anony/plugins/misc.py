@@ -8,7 +8,7 @@ import asyncio
 
 from pyrogram import enums, errors, filters, types
 
-from anony import anon, app, config, db, lang, queue, tasks, userbot, yt
+from anony import anon, app, config, db, lang, queue, tasks, userbot, youtube as yt
 from anony.helpers import buttons
 
 
